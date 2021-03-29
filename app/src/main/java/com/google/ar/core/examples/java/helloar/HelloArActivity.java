@@ -63,6 +63,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -107,8 +109,8 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     private final ArrayList<Anchor> mAnchors = new ArrayList<>();
 
     private LocationScene locationScene;
-    private double OwnLongitude;
-    private double OwnLatitude;
+    private double OwnLongitude=0.0;
+    private double OwnLatitude=0.0;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -116,7 +118,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        click = (Button) findViewById(R.id.button);
+        //click = (Button) findViewById(R.id.button);
         data = (TextView) findViewById(R.id.fetcheddata);
 
         mSurfaceView = findViewById(R.id.surfaceview);
@@ -167,7 +169,57 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         // Set up our location scene
         locationScene = new LocationScene(this, this, mSession);
 
-        // Annotation at POI1 (Location fixed)
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+
+
+                // Annotation at POI1 (Location fixed)
+                locationScene.mLocationMarkers.add(
+                        new LocationMarker(
+                                -0.3838939455430932,
+                                39.4757759295162,
+                                new AnnotationRenderer("Torres de Quart")
+                        )
+                );
+
+                locationScene.mLocationMarkers.clear();
+                fetchData process = new fetchData();
+                process.execute();
+
+                OwnLongitude = locationScene.deviceLocation.currentBestLocation.getLongitude();
+                OwnLatitude= locationScene.deviceLocation.currentBestLocation.getLatitude();
+                data.setText("Own location" + "\n" + "Latitude: " + OwnLatitude + "\n" + "Longitude: " + OwnLongitude);
+
+                for (int i = 0; i < POIs.length(); i++) {
+                    try {
+                        JSONObject JO = (JSONObject) POIs.get(i);
+                        JSONObject JOlatitude = (JSONObject) JO.get("latitude");
+                        JSONObject JOlongitude = (JSONObject) JO.get("longitude");
+                        JSONObject JOname = (JSONObject) JO.get("name");
+
+                        POIname = (String) JOname.get("value");
+                        POIlatitude = (String) JOlatitude.get("value");
+                        POIlongitude = (String) JOlongitude.get("value");
+                        Float latitudeParsed = Float.parseFloat(POIlatitude);
+                        Float longitudeParsed = Float.parseFloat(POIlongitude);
+
+                        locationScene.mLocationMarkers.add(new LocationMarker(
+                                        longitudeParsed,
+                                        latitudeParsed,
+                                        new AnnotationRenderer(POIname)
+                                )
+                        );
+                    }catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            }
+        }, 0, 3000);//wait 0 ms before doing the action and do it evry 1000ms (1second)
+
+        /*// Annotation at POI1 (Location fixed)
         locationScene.mLocationMarkers.add(
                 new LocationMarker(
                         -0.3838939455430932,
@@ -253,7 +305,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
                     }
             }
-        });
+        });*/
     }
 
     @Override
